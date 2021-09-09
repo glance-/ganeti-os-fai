@@ -1,0 +1,21 @@
+#!ipxe
+
+# This is a special file, forced by ipxe-script for all ganeti vms install
+
+set BOOT_SRC http://${next-server}
+
+set FAI_CONFIG_SRC http://${next-server}/fai/fai.tar
+
+# set hostname is done in the embedded ipxe-script generated in ganeti os scripts
+# and just passed on to fai here, if it exists.
+#
+# The same way with ADDCLASSES, that must start with a ,
+isset ${hostname} && set set_hostname hostname=${hostname} ||
+
+# Select what fai kernel to boot.
+set version 4.19.0-12-amd64
+
+kernel ${BOOT_SRC}/fai/vmlinuz-${version} ip=dhcp root=live:http://${next-server}/fai/fairoot-${version}.squashfs rootovl FAI_FLAGS=verbose,sshd,reboot FAI_CONFIG_SRC=${FAI_CONFIG_SRC} FAI_ACTION=install noquiet nosplash nomodeset console=tty0 console=ttyS0,115200n8 ADDCLASSES=GANETI_VM,UNATTENDED_UPGRADES,UNATTENDED_UPGRADES_REBOOT,GRUBSERIALCONSOLE${ADDCLASSES} ${set_hostname} SYSUUID=${uuid} BOOTIF=${mac:hexhyp} 
+initrd ${BOOT_SRC}/fai/initrd.img-${version}
+
+boot

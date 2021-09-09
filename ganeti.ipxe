@@ -1,0 +1,10 @@
+#!ipxe
+
+# Simple hack to chain load a config from main tftp server
+dhcp
+
+# ADDCLASSES must start with a ,
+set ADDCLASSES %ADDCLASSES%
+# and hostname to append to cmdline
+set hostname %HOSTNAME%
+chain ipxe.cfg/ganeti-vm.ipxe

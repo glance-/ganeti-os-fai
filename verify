@@ -1,0 +1,7 @@
+#!/bin/bash
+
+
+if ! command -v mcopy > /dev/null ; then
+	echo "Can't find mcopy!"
+	exit 1
+fi

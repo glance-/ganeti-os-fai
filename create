@@ -1,0 +1,35 @@
+#!/bin/bash -e
+
+if [ "$DEBUG_LEVEL" = "1" ] ; then
+	set -x
+fi
+
+# Whipe anything that might be on the disk before
+dd if=/dev/zero of="$DISK_0_PATH" conv=nocreat,notrunc bs=1M count=128
+
+# Build ipxe with #define CONSOLE_SERIAL
+# and build a universial image that will boot a autoexec.ipxe
+# Just add a blank autoexec.ipxe when building, it will be replaced later in this script
+# ./util/genfsimg -p 10240 -o boot.usb -s autoexec.ipxe bin/ipxe.lkrn bin-i386-efi/ipxe.efi bin-x86_64-efi/ipxe.efi
+dd if=boot.usb of="$DISK_0_PATH" conv=nocreat,notrunc
+
+# Add a , to the string, so its there if its missing
+if [ -n "$OSP_ADDCLASSES" ] && [ "${OSP_ADDCLASSES:0:1}" != "," ] ; then
+	echo "Adding , at the beginning of ADDCLASSES"
+	OSP_ADDCLASSES=",${OSP_ADDCLASSES}"
+fi
+
+INSTANCE_IPXE=$(mktemp "${INSTANCE_NAME}.XXXX.ipxe")
+export MTOOLSRC=$(mktemp "${INSTANCE_NAME}.XXXX.mtools.conf")
+
+cleanup() {
+	rm -f "$INSTANCE_IPXE" "$MTOOLSRC"
+}
+
+trap cleanup EXIT
+
+sed -e "s/%HOSTNAME%/${INSTANCE_NAME}/" -e "s/%ADDCLASSES%/${OSP_ADDCLASSES}/" ganeti.ipxe > "$INSTANCE_IPXE"
+
+# Deploy the file into the disk image that is about to be booted.
+printf "drive h:\nfile=\"$DISK_0_PATH\" partition=1 mformat_only" > "$MTOOLSRC"
+mcopy -o "$INSTANCE_IPXE" h:autoexec.ipxe
